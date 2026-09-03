@@ -1,3 +1,5 @@
+# Definir propiedades con getter y setter para la clase Libro
+
 class Libro:
     def __init__(self, titulo: str, copias_disponibles: int):
         self.titulo = titulo
