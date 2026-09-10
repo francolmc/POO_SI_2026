@@ -17,5 +17,12 @@ def crear_tablas():
             copias_disponibles INTEGER
         )
     """)
+    # Socios (numero_socio: integer primary key, nombre: text not null)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS socios (
+            numero_socio INTEGER PRIMARY KEY, 
+            nombre TEXT NOT NULL
+        )
+    """)
     conexion.commit()
     conexion.close()
