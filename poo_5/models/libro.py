@@ -9,3 +9,6 @@ class Libro:
             return True
         else:
             return False
+
+    # Nótese: ni una línea de SQL aquí.
+    # El modelo no sabe que existe una base de datos.
