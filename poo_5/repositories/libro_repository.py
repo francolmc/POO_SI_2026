@@ -2,7 +2,7 @@ from models.libro import Libro
 
 class LibroRepository:
     def __init__(self, conexion):
-        self.__conexion = conexion
+        self.__conexion = conexion     # inyectada desde database/conexion.py
 
     def crear(self, libro: Libro):
         cursor = self.__conexion.cursor()
@@ -20,14 +20,14 @@ class LibroRepository:
         if registros is None:
             return None
         # ('1234', 'Mi Libro', '3')
-        return Libro(registros[0], registros[1], registros[2])
+        return Libro(registros[0], registros[1], registros[2]) # el repositorio reconstruye el objeto Modelo a partir de la fila
 
     def listar(self):
         cursor = self.__conexion.cursor()
         cursor.execute(
             "SELECT isbn, titulo, copias_diponibles FROM libros"
         )
-        registros = cursor.fetchall()
+        registros = cursor.fetchall() # lista de tuplas
         libros = []
         for registro in registros:
             libros.append(
