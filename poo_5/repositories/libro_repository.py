@@ -1,16 +1,25 @@
 from models.libro import Libro
+import sqlite3
 
 class LibroRepository:
     def __init__(self, conexion):
         self.__conexion = conexion     # inyectada desde database/conexion.py
 
     def crear(self, libro: Libro):
-        cursor = self.__conexion.cursor()
-        cursor.execute(
-            f"INSERT INTO libros VALUES (?, ?, ?)",
-            (libro.isbn, libro.titulo, libro.copias_disponibles,)
-        )
-        self.__conexion.commit()
+        try:
+            cursor = self.__conexion.cursor()
+            cursor.execute(
+                f"INSERT INTO libros VALUES (?, ?, ?)",
+                (libro.isbn, libro.titulo, libro.copias_disponibles,)
+            )
+            self.__conexion.commit()
+        except sqlite3.IntegrityError:
+            # Podemos enviar el error a un log de errores
+            return False
+        except sqlite3.OperationError:
+            # Podemos enviar el error a un log de errores
+            return False
+        return True
 
     def buscar_por_isbn(self, isbn:str):
         cursor = self.__conexion.cursor()
