@@ -4,7 +4,7 @@ class Libro:
         self.titulo = titulo
         self.copias_disponibles = copias_disponibles
 
-    def esta_diponible(self):
+    def esta_disponible(self):
         if self.copias_disponibles > 0:
             return True
         else:

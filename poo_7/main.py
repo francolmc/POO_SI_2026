@@ -10,8 +10,10 @@ from database.conector_mysql import ConectorMySQL
 from database.conexion import crear_tablas
 from repositories.libro_repository import LibroRepository
 from repositories.socio_repository import SocioRepository
+from repositories.prestamo_repository import PrestamoRepository
 from services.libro_service import LibroService
 from services.socio_service import SocioService
+from services.prestamo_service import PrestamoService
 
 
 # --- 1) Elegir el motor. Esta es la ÚNICA línea que cambia entre SQLite y MySQL. ---
@@ -35,11 +37,14 @@ def construir_capas():
     marcador = conector.marcador_parametro
     repositorio_libros = LibroRepository(conexion, marcador)
     repositorio_socios = SocioRepository(conexion, marcador)
+    # PrestamoRepository necesita los otros dos repos para reconstruir la agregación
+    repositorio_prestamos = PrestamoRepository(conexion, repositorio_libros, repositorio_socios, marcador)
 
     servicio_libros = LibroService(repositorio_libros)
     servicio_socios = SocioService(repositorio_socios)
+    servicio_prestamos = PrestamoService(repositorio_prestamos, repositorio_socios, repositorio_libros)
 
-    return conexion, servicio_libros, servicio_socios
+    return conexion, servicio_libros, servicio_socios, servicio_prestamos
 
 
 # ------------------------- Menú de Libros -------------------------
@@ -162,8 +167,66 @@ def menu_socios(servicio_socios):
             print(f"Dato inválido: {error}")
 
 
+# ------------------------- Menú de Préstamos (agregación Socio + Libro) -------------------------
+
+def menu_prestamos(servicio_prestamos):
+    while True:
+        print("\n--- PRÉSTAMOS ---")
+        print("1) Listar todos")
+        print("2) Realizar préstamo")
+        print("3) Registrar devolución")
+        print("4) Historial de un socio")
+        print("0) Volver")
+        opcion = input("Opción: ").strip()
+
+        try:
+            if opcion == '1':
+                prestamos = servicio_prestamos.listar_prestamos()
+                if not prestamos:
+                    print("(no hay préstamos registrados)")
+                for prestamo in prestamos:
+                    # Navegación directa por la agregación: prestamo.socio y prestamo.libro
+                    # son objetos completos (no ids sueltos), así que se accede a sus
+                    # propios atributos con punto, como cualquier objeto normal.
+                    estado = "vigente" if prestamo.esta_vigente() else f"devuelto el {prestamo.fecha_devolucion}"
+                    print(f"  Préstamo #{prestamo.id_prestamo}: {prestamo.socio.nombre} (socio #{prestamo.socio.numero_socio}) "
+                          f"— \"{prestamo.libro.titulo}\" (ISBN {prestamo.libro.isbn}) · {estado}")
+
+            elif opcion == '2':
+                numero_socio = int(input("Número de socio: ").strip())
+                isbn = input("ISBN del libro: ").strip()
+                prestamo = servicio_prestamos.realizar_prestamo(numero_socio, isbn)
+                # Mismo punto: apenas se crea, ya se puede navegar socio/libro sin volver a consultarlos.
+                print(f"Préstamo #{prestamo.id_prestamo} registrado: "
+                      f"{prestamo.socio.nombre} se llevó \"{prestamo.libro.titulo}\"")
+
+            elif opcion == '3':
+                id_prestamo = int(input("ID del préstamo: ").strip())
+                prestamo = servicio_prestamos.registrar_devolucion(id_prestamo)
+                print(f"Devolución registrada: {prestamo}")
+
+            elif opcion == '4':
+                numero_socio = int(input("Número de socio: ").strip())
+                historial = servicio_prestamos.historial_de_socio(numero_socio)
+                if not historial:
+                    print("(este socio no tiene préstamos)")
+                for prestamo in historial:
+                    estado = "vigente" if prestamo.esta_vigente() else f"devuelto el {prestamo.fecha_devolucion}"
+                    print(f"  #{prestamo.id_prestamo}: \"{prestamo.libro.titulo}\" · {estado}  "
+                          f"(socio: {prestamo.socio.nombre})")
+
+            elif opcion == '0':
+                return
+
+            else:
+                print("Opción inválida.")
+
+        except ValueError as error:
+            print(f"No se pudo completar: {error}")
+
+
 def menu_principal():
-    conexion, servicio_libros, servicio_socios = construir_capas()
+    conexion, servicio_libros, servicio_socios, servicio_prestamos = construir_capas()
     print(f"Conectado con motor: {MOTOR}")
 
     try:
@@ -171,6 +234,7 @@ def menu_principal():
             print("\n=== APLICACIÓN MANTENEDORA — Biblioteca ===")
             print("1) Gestionar Libros")
             print("2) Gestionar Socios")
+            print("3) Gestionar Préstamos")
             print("0) Salir")
             opcion = input("Opción: ").strip()
 
@@ -178,6 +242,8 @@ def menu_principal():
                 menu_libros(servicio_libros)
             elif opcion == '2':
                 menu_socios(servicio_socios)
+            elif opcion == '3':
+                menu_prestamos(servicio_prestamos)
             elif opcion == '0':
                 break
             else:

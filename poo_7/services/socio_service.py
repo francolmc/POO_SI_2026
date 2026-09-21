@@ -37,5 +37,5 @@ class SocioService:
 
     def eliminar_socio(self, numero_socio):
         if self.socio_repository.buscar_por_numero(numero_socio) is None:
-            raise SocioNoEncontradoError(f"No existe un socio con el número {numero_socio}")
+            raise ValueError(f"No existe un socio con el número {numero_socio}")
         return self.socio_repository.eliminar(numero_socio)

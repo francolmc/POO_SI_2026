@@ -27,4 +27,19 @@ def crear_tablas(conexion: Conector):
             nombre VARCHAR(255) NOT NULL
         )
     """)
+    # Tabla de la AGREGACIÓN Prestamo -> (Socio, Libro): solo guarda las llaves
+    # foráneas, nunca copia los datos de socios/libros (eso violaría la agregación).
+    # Nota: INTEGER PRIMARY KEY con autoincremento es sintaxis de SQLite; en MySQL
+    # sería "id_prestamo INT AUTO_INCREMENT PRIMARY KEY" (fuera del alcance de este ejemplo).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS prestamos (
+            id_prestamo INTEGER PRIMARY KEY AUTOINCREMENT,
+            numero_socio INTEGER NOT NULL,
+            isbn VARCHAR(20) NOT NULL,
+            fecha_prestamo VARCHAR(20) NOT NULL,
+            fecha_devolucion VARCHAR(20),
+            FOREIGN KEY (numero_socio) REFERENCES socios(numero_socio),
+            FOREIGN KEY (isbn) REFERENCES libros(isbn)
+        )
+    """)
     conexion.commit()
